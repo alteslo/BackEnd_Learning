@@ -59,6 +59,8 @@ def event_loop():
 
         try:
             task = tasks.pop(0)
+            print(f'-----------------------\ntask в event_loop: {next(task)}')
+            print(f'-----------------------\ntasks в event_loop после pop: {next(tasks[0])}')
 
             reason, sock = next(task)
 
@@ -72,6 +74,9 @@ def event_loop():
 
 if __name__ == '__main__':
     tasks.append(server())
+
+    print(f'-----------------------\ntasks перед event_loop: {next(tasks[0])}')
+
     try:
         event_loop()
     except ConnectionResetError:
