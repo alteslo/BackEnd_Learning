@@ -1,5 +1,5 @@
 import socket
-import select
+from select import select
 
 # David Beazley
 # 2015 PyCon
@@ -26,7 +26,7 @@ def server():
         client_socket, addres = server_socket.accept()  # read
 
         print('Connection from:', addres)
-        client(client_socket)
+        tasks.append(client(client_socket))
 
 
 def client(client_socket):
@@ -42,14 +42,14 @@ def client(client_socket):
             yield ('write', client_socket)
             client_socket.send(response)  # write
         else:
-            client_socket.close()
             break
+    client_socket.close()
 
 
 def event_loop():
     while any([tasks, to_read, to_write]):
         while not tasks:
-            ready_to_read, ready_to_write, _ = select(to_write, to_write, [])
+            ready_to_read, ready_to_write, _ = select(to_read, to_write, [])
 
             for sock in ready_to_read:
                 tasks.append(to_read.pop(sock))
@@ -57,10 +57,22 @@ def event_loop():
             for sock in ready_to_write:
                 tasks.append(to_write.pop(sock))
 
+        try:
+            task = tasks.pop(0)
+
+            reason, sock = next(task)
+
+            if reason == 'read':
+                to_read[sock] = task
+            if reason == 'write':
+                to_write[sock] = task
+        except StopIteration:
+            print('Done')
+
 
 if __name__ == '__main__':
     tasks.append(server())
     try:
-        server()
+        event_loop()
     except ConnectionResetError:
         print('Соединение разорвано...')
